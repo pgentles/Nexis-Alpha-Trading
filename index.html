@@ -1,0 +1,2632 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexis Premium Trading Terminal</title>
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CDNs for Icons, Premium Charts, and Google Auth -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <style>
+      :root {
+        --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: 'Space Grotesk', monospace;
+
+        --bg-deep: 228 32% 6%;
+        --bg-card: 228 24% 10%;
+        --border-glass: 228 20% 20%;
+        
+        --primary: 262 83% 58%;      
+        --primary-glow: 262 83% 58% / 0.15;
+        --secondary: 190 90% 50%;    
+        --secondary-glow: 190 90% 50% / 0.15;
+        
+        --accent: 320 85% 60%;       
+        
+        --success: 142 70% 45%;      
+        --success-glow: 142 70% 45% / 0.1;
+        --danger: 0 84% 60%;         
+        --danger-glow: 0 84% 60% / 0.1;
+
+        --text-primary: 210 40% 98%;
+        --text-secondary: 215 20% 65%;
+        --text-muted: 217 15% 45%;
+
+        --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --glass-blur: blur(20px);
+        --glass-bg: rgba(13, 14, 25, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.05);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background-color: hsl(var(--bg-deep));
+        color: hsl(var(--text-primary));
+        overflow-x: hidden;
+        min-height: 100vh;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(262, 80%, 40%, 0.12) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, hsla(190, 80%, 40%, 0.08) 0px, transparent 50%);
+        background-attachment: fixed;
+      }
+
+      /* Custom Scrollbars */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: hsl(var(--bg-deep));
+      }
+      ::-webkit-scrollbar-thumb {
+        background: hsla(255, 255, 255, 0.15);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--primary));
+      }
+
+      /* Layout Grid */
+      .app-container {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+      }
+
+      /* Navigation Sidebar */
+      .sidebar {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-blur);
+        border-right: 1px solid var(--glass-border);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: var(--font-mono);
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 40px;
+        background: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary)));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-grow: 1;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: hsl(var(--text-secondary));
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        border: 1px solid transparent;
+      }
+
+      .nav-item:hover, .nav-item.active {
+        color: hsl(var(--text-primary));
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .nav-item.active {
+        background: linear-gradient(135deg, var(--primary-glow), transparent);
+        border-color: rgba(147, 51, 234, 0.2);
+      }
+
+      .nav-item.active svg {
+        color: hsl(var(--primary));
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        border-top: 1px solid var(--glass-border);
+        padding-top: 20px;
+      }
+
+      /* Main Content Area */
+      .main-content {
+        padding: 40px;
+        overflow-y: auto;
+        max-width: 1600px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      /* Tab Panels */
+      .tab-panel {
+        display: none;
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .tab-panel.active {
+        display: flex;
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Glassmorphic Card Styles */
+      .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 24px;
+        transition: var(--transition-smooth);
+      }
+
+      .glass-card:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      }
+
+      h1, h2, h3, h4 {
+        font-family: var(--font-sans);
+        font-weight: 700;
+        color: hsl(var(--text-primary));
+      }
+
+      h1 {
+        font-size: 32px;
+        letter-spacing: -0.5px;
+      }
+
+      .card-title {
+        font-size: 14px;
+        color: hsl(var(--text-secondary));
+        font-weight: 500;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Button UI */
+      .btn {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 24px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(270, 80%, 50%));
+        color: #fff;
+        box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(147, 51, 234, 0.45);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--glass-border);
+        color: hsl(var(--text-primary));
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, hsl(var(--danger)), #e11d48);
+        color: #fff;
+      }
+
+      .btn-danger:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 8px;
+      }
+
+      /* Status Indicators */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+      }
+
+      .badge-active {
+        background: var(--success-glow);
+        color: hsl(var(--success));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+
+      .badge-paused {
+        background: rgba(255, 255, 255, 0.03);
+        color: hsl(var(--text-secondary));
+        border: 1px solid var(--glass-border);
+      }
+
+      /* Animations */
+      @keyframes pulse-glow {
+        0%, 100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+
+      .glow-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: hsl(var(--success));
+        box-shadow: 0 0 10px hsl(var(--success));
+        display: inline-block;
+      }
+
+      .glow-dot-pulse {
+        animation: pulse-glow 2s infinite ease-in-out;
+      }
+
+      /* Input Fields styling */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      label {
+        font-size: 13px;
+        color: hsl(var(--text-secondary));
+        font-weight: 500;
+      }
+
+      input, select, textarea {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #fff;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        transition: var(--transition-smooth);
+      }
+
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 3px var(--primary-glow);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      /* Custom Table Design */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+      }
+
+      th {
+        text-align: left;
+        padding: 12px 16px;
+        color: hsl(var(--text-secondary));
+        font-size: 13px;
+        font-weight: 500;
+        border-bottom: 1px solid var(--glass-border);
+      }
+
+      td {
+        padding: 16px;
+        font-size: 14px;
+        color: hsl(var(--text-primary));
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      }
+
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.01);
+      }
+
+      .text-success {
+        color: hsl(var(--success)) !important;
+      }
+
+      .text-danger {
+        color: hsl(var(--danger)) !important;
+      }
+
+      /* Live Terminal Log */
+      .terminal-window {
+        background: #090a10;
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 16px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        height: 380px;
+        overflow-y: auto;
+        color: #e2e8f0;
+      }
+
+      .terminal-line {
+        margin-bottom: 8px;
+        line-height: 1.5;
+        display: flex;
+        gap: 12px;
+      }
+
+      .terminal-time {
+        color: hsl(var(--text-muted));
+        flex-shrink: 0;
+      }
+
+      .terminal-msg {
+        word-break: break-all;
+      }
+
+      /* Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.1);
+        transition: .4s;
+        border-radius: 34px;
+        border: 1px solid var(--glass-border);
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: hsl(var(--primary));
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(24px);
+      }
+
+      /* Sub-tabs selector for Bots page */
+      .bots-tabs {
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        padding: 6px;
+        border-radius: 14px;
+      }
+      
+      .bots-tab-btn {
+        background: transparent;
+        border: none;
+        color: hsl(var(--text-secondary));
+        padding: 8px 16px;
+        font-family: var(--font-sans);
+        font-weight: 600;
+        font-size: 13px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+      }
+
+      .bots-tab-btn.active {
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(270, 80%, 50%));
+        color: #fff;
+      }
+      .google-acc-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: hsl(var(--primary)) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- AUTHENTICATION VIEW OVERLAY -->
+    <div id="auth-screen" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 100; background: hsl(var(--bg-deep)); background-image: radial-gradient(at 50% 50%, hsla(262, 80%, 40%, 0.15) 0px, transparent 60%);">
+      <div class="glass-card" style="width: 420px; padding: 40px; text-align: center; display: flex; flex-direction: column; gap: 24px; border-color: rgba(147, 51, 234, 0.2); box-shadow: 0 0 50px rgba(147, 51, 234, 0.15);">
+        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 60px; height: 60px; border-radius: 20px; background: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary))); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(147, 51, 234, 0.4);">
+            <i data-lucide="zap" style="width: 30px; height: 30px; color: #fff;" fill="currentColor"></i>
+          </div>
+          <h1 style="font-family: var(--font-mono); font-size: 26px; font-weight: 800; background: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary))); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">NEXIS.ALPHA</h1>
+          <p style="color: hsl(var(--text-secondary)); font-size: 13px;">Enterprise-grade private decentralized trading terminal.</p>
+        </div>
+
+        <div style="border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); padding: 20px 0; display: flex; flex-direction: column; gap: 16px;">
+          <p style="font-size: 12px; color: hsl(var(--text-muted)); font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Sign in to access your node</p>
+          
+          <button id="google-login-btn" class="btn" style="background: #fff; color: #1f2937; justify-content: center; padding: 14px; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%;">
+            <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 8px;">
+              <path fill="#EA4335" d="M12 5.04c1.78 0 3.37.61 4.62 1.8l3.43-3.43C17.97 1.38 15.19.5 12 .5 7.37.5 3.42 3.17 1.5 7.07l3.96 3.07C6.41 7.24 8.97 5.04 12 5.04z" />
+              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.43h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.37-4.88 3.37-8.48z" />
+              <path fill="#FBBC05" d="M5.46 14.86c-.23-.69-.36-1.42-.36-2.18s.13-1.49.36-2.18L1.5 7.43C.54 9.35 0 11.53 0 12.82c0 1.29.54 3.47 1.5 5.39l3.96-3.35z" />
+              <path fill="#34A853" d="M12 23.5c3.24 0 5.97-1.07 7.96-2.92l-3.66-2.84c-1.01.68-2.32 1.09-4.3 1.09-3.03 0-5.59-2.2-6.51-5.16L1.5 16.74c1.92 3.9 5.87 6.76 10.5 6.76z" />
+            </svg>
+            Continue with Google
+          </button>
+        </div>
+
+        <div style="font-size: 11px; color: hsl(var(--text-muted)); display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <i data-lucide="shield-check" style="width: 14px; height: 14px; color: hsl(var(--success))"></i>
+          <span>Secure AES encryption enabled on local session storage</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE ACCOUNT SELECTOR MODAL -->
+    <div id="google-modal" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+      <div class="glass-card" style="width: 360px; padding: 24px; display: flex; flex-direction: column; gap: 20px; background: rgba(20, 20, 30, 0.95);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-size: 16px; font-weight: 700;">Sign in with Google</h3>
+          <button id="close-google-modal" style="background: transparent; border: none; color: hsl(var(--text-secondary)); cursor: pointer;">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+        
+        <p style="font-size: 13px; color: hsl(var(--text-secondary));">Choose an account to continue to <strong>Nexis Alpha</strong></p>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Account Row 1 -->
+          <div class="google-acc-row" data-name="Philip Gentles" data-email="pgentles@gmail.com" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=Philip" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); cursor: pointer; transition: var(--transition-smooth);">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Philip" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(147, 51, 234, 0.2);" />
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span style="font-size: 13px; font-weight: 600; color: #fff;">Philip Gentles</span>
+              <span style="font-size: 11px; color: hsl(var(--text-muted));">pgentles@gmail.com</span>
+            </div>
+          </div>
+          
+          <!-- Account Row 2 -->
+          <div class="google-acc-row" data-name="Guest Trader" data-email="guest.terminal@gmail.com" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); cursor: pointer; transition: var(--transition-smooth);">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(6, 182, 212, 0.2);" />
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span style="font-size: 13px; font-weight: 600; color: #fff;">Guest Trader</span>
+              <span style="font-size: 11px; color: hsl(var(--text-muted));">guest.terminal@gmail.com</span>
+            </div>
+          </div>
+        </div>
+        
+        <p style="font-size: 11px; color: hsl(var(--text-muted)); line-height: 1.4;">
+          To allow you to sign in, Google will share your name, email address, profile picture, and personal preferences with Nexis Alpha.
+        </p>
+      </div>
+    </div>
+
+    <div class="app-container" id="terminal-app-container" style="display: none;">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="logo-container">
+          <i data-lucide="zap" fill="currentColor"></i>
+          <span>NEXIS.ALPHA</span>
+        </div>
+
+        <div class="nav-links">
+          <div class="nav-item active" data-view="dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </div>
+          <div class="nav-item" data-view="bots">
+            <i data-lucide="cpu"></i>
+            <span>Trading Bots</span>
+          </div>
+          <div class="nav-item" data-view="trades">
+            <i data-lucide="history"></i>
+            <span>Execution Logs</span>
+          </div>
+          <div class="nav-item" data-view="market">
+            <i data-lucide="line-chart"></i>
+            <span>Market Trends</span>
+          </div>
+          <div class="nav-item" data-view="wallets">
+            <i data-lucide="wallet"></i>
+            <span>Wallet Manager</span>
+          </div>
+          <div class="nav-item" data-view="integrations">
+            <i data-lucide="settings"></i>
+            <span>Integrations</span>
+          </div>
+        </div>
+
+        <div class="sidebar-footer" id="sidebar-user-footer">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Main Contents -->
+      <div class="main-content">
+        
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view" class="tab-panel active">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">Terminal Hub</h2>
+              <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Real-time overview of assets and automated copy strategies.</p>
+            </div>
+          </div>
+
+          <!-- Metrics -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+            <div class="glass-card" style="position: relative; overflow: hidden;">
+              <div class="card-title"><i data-lucide="wallet" style="width: 16px;"></i> Total Asset Valuation</div>
+              <div id="metric-total-value" style="font-size: 32px; font-weight: 800; margin: 10px 0; font-family: var(--font-mono);">$124,500.00</div>
+              <div id="metric-pnl" style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                <span class="text-success" style="font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
+                  <i data-lucide="trending-up" style="width: 14px;"></i> +$3,450.00 (+2.85%)
+                </span>
+                <span style="color: hsl(var(--text-muted));">24h change</span>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <div class="card-title"><i data-lucide="activity" style="width: 16px;"></i> Copy Trading Bot</div>
+              <div id="metric-copy-count" style="font-size: 32px; font-weight: 800; margin: 10px 0; font-family: var(--font-mono);">2 Active Whales</div>
+              <div>
+                <span class="badge badge-active"><span class="glow-dot glow-dot-pulse"></span> MONITORING</span>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <div class="card-title"><i data-lucide="cpu" style="width: 16px;"></i> Custom Algorithmic Bot</div>
+              <div id="metric-algo-status" style="font-size: 32px; font-weight: 800; margin: 10px 0; font-family: var(--font-mono);">STANDBY</div>
+              <div>
+                <span id="badge-algo-mode" class="badge badge-paused">PAUSED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graph and Balances -->
+          <div style="display: grid; grid-template-columns: 7fr 5fr; gap: 24px;">
+            <div class="glass-card" style="display: flex; flex-direction: column; min-height: 420px;">
+              <h3 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="trending-up" style="width: 18px; color: hsl(var(--primary))"></i> PnL Performance Curve
+              </h3>
+              <div style="flex-grow: 1; width: 100%; position: relative;">
+                <div id="chart"></div>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <h3 style="font-size: 18px; margin-bottom: 20px;">Wallet Asset Balances</h3>
+              <div id="balances-container" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Balances will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRADING BOTS CONFIG VIEW -->
+        <div id="bots-view" class="tab-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">Bot Configurations</h2>
+              <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Configure whale copy parameters and customize technical indicator triggers.</p>
+            </div>
+            
+            <div class="bots-tabs">
+              <button class="bots-tab-btn active" data-subtab="copy">Copy Trading</button>
+              <button class="bots-tab-btn" data-subtab="algo">Algorithmic Settings</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 7fr 5fr; gap: 24px; align-items: start;">
+            
+            <!-- Left Config Forms -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              
+              <!-- Subtab: Copy Trading -->
+              <div id="subtab-copy-content" style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="glass-card">
+                  <h3 style="font-size: 18px; margin-bottom: 20px;">Connected Whales to Copy</h3>
+                  <div id="whales-container" style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Whales list will load here -->
+                  </div>
+                </div>
+
+                <div class="glass-card">
+                  <h3 style="font-size: 18px; margin-bottom: 20px;">Connect New Whale Address</h3>
+                  <form id="add-trader-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group" style="grid-column: span 2;">
+                      <label>Trader Name/Tag</label>
+                      <input type="text" id="trader-name-input" placeholder="e.g. Smart Money Solana Address" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                      <label>On-Chain Wallet Address</label>
+                      <input type="text" id="trader-address-input" placeholder="0x... or Solana Base58 Address" required />
+                    </div>
+                    <div class="form-group">
+                      <label>Network</label>
+                      <select id="trader-chain-input">
+                        <option value="Solana">Solana (Jupiter Routing)</option>
+                        <option value="Ethereum">Ethereum (Uniswap/1inch Routing)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Copy Allocation Multiplier</label>
+                      <input type="number" id="trader-mult-input" step="0.1" value="1.0" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                      <label>Max Budget Allocation per Trade (USD)</label>
+                      <input type="number" id="trader-max-input" value="1000" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="grid-column: span 2; justify-content: center;">
+                      <i data-lucide="plus" style="width: 16px;"></i> Track & Copy Wallet
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Subtab: Algo settings -->
+              <div id="subtab-algo-content" style="display: none; flex-direction: column; gap: 24px;">
+                <div class="glass-card">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                      <i data-lucide="cpu" style="width: 18px; color: hsl(var(--secondary))"></i> Algorithmic Strategy Settings
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <span id="algo-toggle-label" style="font-size: 13px; color: hsl(var(--text-secondary))">Trading Disabled</span>
+                      <label class="switch">
+                        <input type="checkbox" id="algo-bot-status-checkbox" />
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <form id="algo-settings-form" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                      <div class="form-group">
+                        <label>Technical Strategy Mode</label>
+                        <select id="algo-strategy-select">
+                          <option value="RSI_Oversold">RSI Oversold/Overbought (Mean Reversion)</option>
+                          <option value="SMA_Crossover">Double SMA Crossover (Trend Following)</option>
+                          <option value="MACD_Momentum">MACD Signal Line Cross (Momentum)</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>DCA / Trade Order Size (USD)</label>
+                        <input type="number" id="algo-size-input" value="250" />
+                      </div>
+                    </div>
+
+                    <div style="border-top: 1px solid rgba(255,255,255,0.04); padding-top: 20px;">
+                      <h4 style="font-size: 14px; margin-bottom: 16px; color: hsl(var(--text-secondary))">Strategy Threshold Rules</h4>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                          <label>RSI Oversold Threshold (BUY trigger)</label>
+                          <input type="number" id="algo-rsi-oversold" value="30" />
+                        </div>
+                        <div class="form-group">
+                          <label>RSI Overbought Threshold (SELL trigger)</label>
+                          <input type="number" id="algo-rsi-overbought" value="70" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="border-top: 1px solid rgba(255,255,255,0.04); padding-top: 20px;">
+                      <h4 style="font-size: 14px; margin-bottom: 16px; color: hsl(var(--text-secondary))">Risk Safeguards</h4>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                          <label>Auto Stop Loss (%)</label>
+                          <input type="number" step="0.1" id="algo-stoploss" value="3.5" />
+                        </div>
+                        <div class="form-group">
+                          <label>Auto Take Profit (%)</label>
+                          <input type="number" step="0.1" id="algo-takeprofit" value="10.0" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Strategy Rules</button>
+                  </form>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Terminal Logs -->
+            <div class="glass-card" style="height: 540px; display: flex; flex-direction: column; position: sticky; top: 24px;">
+              <h3 style="font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="terminal" style="width: 18px; color: hsl(var(--primary))"></i> Live Bot Console Terminal
+              </h3>
+              <div id="terminal" class="terminal-window" style="flex-grow: 1;">
+                <!-- Live logs stream here -->
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: hsl(var(--text-muted)); margin-top: 12px;">
+                <span class="glow-dot glow-dot-pulse"></span> Connected to RPC Mempools - Fetching live swaps
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TRADE LOGS VIEW -->
+        <div id="trades-view" class="tab-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">Execution Logs</h2>
+              <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Complete database of all orders executed manually, via copy-trading, or indicators.</p>
+            </div>
+            <button class="btn btn-secondary" id="clear-trades-btn">
+              <i data-lucide="trash-2" style="width: 14px;"></i> Clear Closed Trades
+            </button>
+          </div>
+
+          <div class="glass-card" style="padding: 8px; overflow-x: auto;">
+            <table id="trades-table">
+              <thead>
+                <tr>
+                  <th>Date/Time</th>
+                  <th>Type</th>
+                  <th>Source</th>
+                  <th>Pair</th>
+                  <th>Side</th>
+                  <th>Quantity</th>
+                  <th>Entry Price</th>
+                  <th>Exit Price</th>
+                  <th>Value (USD)</th>
+                  <th>PnL (%)</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trades-tbody">
+                <!-- Trades will be generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MARKET TRENDS VIEW -->
+        <div id="market-view" class="tab-panel">
+          <div>
+            <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">Market Intelligence</h2>
+            <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Real-time intelligence feed for top assets, dominance, and fear & greed sentiment.</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 8fr 4fr; gap: 24px; align-items: start;">
+            <!-- Left Side: Top 20 cryptos table -->
+            <div class="glass-card" style="padding: 16px; overflow-x: auto;">
+              <h3 style="font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="coins" style="width: 18px; color: hsl(var(--secondary))"></i> Top 20 Digital Assets
+              </h3>
+              <table id="market-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>24h Change</th>
+                    <th>24h Volume</th>
+                    <th>Market Cap</th>
+                    <th>Last 24h</th>
+                  </tr>
+                </thead>
+                <tbody id="market-tbody">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Right Side: Market statistics widgets -->
+            <div style="display: flex; flex-direction: column; gap: 24px; position: sticky; top: 24px;">
+              
+              <!-- Sentiment Indicator -->
+              <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="flame" style="width: 16px; color: hsl(var(--accent))"></i> Market Sentiment
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 14px; color: hsl(var(--text-secondary))">Fear & Greed Index</span>
+                    <span id="fear-greed-label" class="badge" style="background: rgba(147, 51, 234, 0.15); color: hsl(var(--primary))">72 (Greed)</span>
+                  </div>
+                  <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; position: relative;">
+                    <div id="fear-greed-bar" style="width: 72%; height: 100%; background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary))); transition: var(--transition-smooth);"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; color: hsl(var(--text-muted));">
+                    <span>Extreme Fear</span>
+                    <span>Neutral</span>
+                    <span>Extreme Greed</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- General Stats -->
+              <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="pie-chart" style="width: 16px; color: hsl(var(--secondary))"></i> Global Stats
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 14px; font-size: 14px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: hsl(var(--text-secondary))">Global Market Cap</span>
+                    <span id="market-stat-cap" style="font-family: var(--font-mono); font-weight: 600;">$2.48T</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: hsl(var(--text-secondary))">24h Vol Total</span>
+                    <span id="market-stat-vol" style="font-family: var(--font-mono); font-weight: 600;">$94.3B</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: hsl(var(--text-secondary))">BTC Dominance</span>
+                    <span id="market-stat-btc-dom" style="font-family: var(--font-mono); font-weight: 600;">54.2%</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: hsl(var(--text-secondary))">SOL Dominance</span>
+                    <span id="market-stat-sol-dom" style="font-family: var(--font-mono); font-weight: 600;">3.85%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Heatmap Ticker -->
+              <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="trending-up" style="width: 16px; color: hsl(var(--success))"></i> Top 24h Movers
+                </h3>
+                <div id="market-movers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Top movers list -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- WALLET BALANCES MANAGER VIEW -->
+        <div id="wallets-view" class="tab-panel">
+          <div>
+            <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">Wallet Manager</h2>
+            <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Monitor addresses, manage asset allocations, and execute simulated deposits/withdrawals.</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 7fr 5fr; gap: 24px; align-items: start;">
+            <!-- Left: Wallet balances listing with actions -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="glass-card">
+                <h3 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="wallet" style="width: 18px; color: hsl(var(--primary))"></i> Monitored Addresses
+                </h3>
+                <div id="wallets-detailed-list" style="display: flex; flex-direction: column; gap: 16px;">
+                  <!-- Wallet address cards -->
+                </div>
+              </div>
+
+              <!-- Form to add custom wallet -->
+              <div class="glass-card">
+                <h3 style="font-size: 18px; margin-bottom: 20px;">Monitor Custom Address</h3>
+                <form id="add-wallet-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label>Wallet Label/Name</label>
+                    <input type="text" id="wallet-label-input" placeholder="e.g. My Ledger Cold Storage" required />
+                  </div>
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label>Public Address</label>
+                    <input type="text" id="wallet-addr-input" placeholder="0x... or Solana Base58 Address" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Chain / Network</label>
+                    <select id="wallet-chain-input">
+                      <option value="Solana">Solana (SOL)</option>
+                      <option value="Ethereum">Ethereum (ETH)</option>
+                      <option value="Multi-Chain">Stablecoins (USDC)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Initial Balance</label>
+                    <input type="number" step="0.001" id="wallet-bal-input" placeholder="0.00" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="grid-column: span 2; justify-content: center;">
+                    <i data-lucide="plus" style="width: 16px;"></i> Monitor Wallet
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Right: Wallet Analytics and Actions -->
+            <div style="display: flex; flex-direction: column; gap: 24px; position: sticky; top: 24px;">
+              <!-- Donut Chart -->
+              <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="pie-chart" style="width: 16px; color: hsl(var(--secondary))"></i> Asset Allocation
+                </h3>
+                <div style="display: flex; justify-content: center; align-items: center; min-height: 250px; position: relative;">
+                  <div id="wallet-allocation-chart"></div>
+                </div>
+              </div>
+
+              <!-- Transaction/Action simulation -->
+              <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="banknote" style="width: 16px; color: hsl(var(--success))"></i> Funding Console (Simulated)
+                </h3>
+                <form id="wallet-action-form" style="display: flex; flex-direction: column; gap: 14px;">
+                  <div class="form-group">
+                    <label>Select Target Wallet</label>
+                    <select id="action-wallet-select">
+                      <!-- Wallets loaded here -->
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Transaction Type</label>
+                    <select id="action-type-select">
+                      <option value="deposit">Simulate Deposit / Fund Wallet (+)</option>
+                      <option value="withdraw">Simulate Withdrawal / Transfer (-)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Asset Quantity</label>
+                    <input type="number" step="0.01" id="action-amount-input" placeholder="0.00" required />
+                  </div>
+                  <button type="submit" class="btn btn-secondary" style="justify-content: center;">
+                    Submit Transaction
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTEGRATIONS VIEW -->
+        <div id="integrations-view" class="tab-panel">
+          <div>
+            <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">API & RPC Integrations</h2>
+            <p style="color: hsl(var(--text-secondary)); font-size: 14px;">Connect trading APIs and Web3 provider nodes. Credentials are stored encrypted locally.</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 7fr 5fr; gap: 24px; align-items: start;">
+            <form id="integrations-form" style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="glass-card">
+                <h3 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="globe" style="width: 18px;"></i> Web3 Node RPC Providers
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="form-group">
+                    <label>Solana Mainnet RPC Node Endpoint</label>
+                    <input type="text" id="int-solana-rpc" value="https://api.mainnet-beta.solana.com" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Ethereum Mainnet RPC Endpoint</label>
+                    <input type="text" id="int-ethereum-rpc" value="https://eth-mainnet.g.alchemy.com/v2/demo" required />
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass-card">
+                <h3 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="key" style="width: 18px;"></i> Centralized Exchanges (CEX)
+                </h3>
+                
+                <!-- Binance API -->
+                <div style="padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <span style="font-weight: 600; font-size: 16px;">Binance Global API Integration</span>
+                    <label class="switch">
+                      <input type="checkbox" id="int-binance-enable" />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div id="binance-inputs-container" style="display: none; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                      <label>Binance API Read/Write Key</label>
+                      <input type="password" id="int-binance-key" placeholder="Enter Binance API key..." />
+                    </div>
+                    <div class="form-group">
+                      <label>Binance Secret Key</label>
+                      <input type="password" id="int-binance-secret" placeholder="Enter Binance secret..." />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Coinbase API -->
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <span style="font-weight: 600; font-size: 16px;">Coinbase Advanced Trade API</span>
+                    <label class="switch">
+                      <input type="checkbox" id="int-coinbase-enable" />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div id="coinbase-inputs-container" style="display: none; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                      <label>Coinbase API Key</label>
+                      <input type="password" id="int-coinbase-key" placeholder="Enter Coinbase API key..." />
+                    </div>
+                    <div class="form-group">
+                      <label>Coinbase Secret Key</label>
+                      <input type="password" id="int-coinbase-secret" placeholder="Enter Coinbase API secret..." />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <button type="submit" class="btn btn-primary" style="padding: 14px 28px;">Save Node Configurations</button>
+                <span id="save-key-success" class="text-success" style="display: none; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;">
+                  <i data-lucide="check-circle" style="width: 18px;"></i> Keys saved & locked!
+                </span>
+              </div>
+            </form>
+
+            <div class="glass-card" style="display: flex; flex-direction: column; gap: 18px; border-left: 3px solid hsl(var(--primary));">
+              <h3 style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="shield" style="width: 18px; color: hsl(var(--primary))"></i> Security & Cryptographic details
+              </h3>
+              <p style="font-size: 13px; color: hsl(var(--text-secondary)); line-height: 1.6;">
+                All credentials, APIs, and Web3 RPC keys are stored within your local web browser's isolated <code style="font-family: var(--font-mono); background: rgba(0,0,0,0.25); padding: 2px 4px; border-radius: 4px;">localStorage</code>. They never cross outside networks except when routing orders to blockchain RPCs.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN ENGINE AND APP CONTROLLER -->
+    <script>
+      // Initialize Lucide Icons
+      lucide.createIcons();
+
+      // DEFAULT DB DATA
+      const DEFAULT_DB = {
+        portfolio: {
+          totalValueUsd: 124500.00,
+          pnl24hUsd: 3450.00,
+          pnl24hPercent: 2.85,
+          balances: [
+            { id: "sol", name: "Solana Wallet", symbol: "SOL", balance: 184.50, valueUsd: 27675.00, chain: "Solana", address: "HN7cAB...3zPQ99" },
+            { id: "eth", name: "Ethereum Wallet", symbol: "ETH", balance: 12.85, valueUsd: 41120.00, chain: "Ethereum", address: "0x71C...8e9b" },
+            { id: "usdc", name: "USD Coin", symbol: "USDC", balance: 55705.00, valueUsd: 55705.00, chain: "Multi-Chain", address: "Internal" }
+          ]
+        },
+        traders: [
+          {
+            id: "trader_01",
+            name: "Moby-Sol Whale",
+            address: "4hB6...K8sP",
+            chain: "Solana",
+            status: "active",
+            multiplier: 1.5,
+            slippage: 1.0,
+            maxTradeUsd: 1000,
+            winRate: 74.2,
+            totalTrades: 142,
+            totalProfitUsd: 124300
+          },
+          {
+            id: "trader_02",
+            name: "Giga-ETH Sniper",
+            address: "0xae2...9051",
+            chain: "Ethereum",
+            status: "active",
+            multiplier: 0.5,
+            slippage: 0.5,
+            maxTradeUsd: 2000,
+            winRate: 68.9,
+            totalTrades: 89,
+            totalProfitUsd: 84100
+          },
+          {
+            id: "trader_03",
+            name: "Degen-Sol Arbitrage",
+            address: "Fk8s...aU9q",
+            chain: "Solana",
+            status: "paused",
+            multiplier: 1.0,
+            slippage: 2.0,
+            maxTradeUsd: 500,
+            winRate: 81.5,
+            totalTrades: 321,
+            totalProfitUsd: 49200
+          }
+        ],
+        algoSettings: {
+          status: "paused",
+          strategy: "RSI_Oversold",
+          rsiOversold: 30,
+          rsiOverbought: 70,
+          tradeSizeUsd: 250,
+          stopLossPercent: 3.5,
+          takeProfitPercent: 10.0
+        },
+        trades: [
+          {
+            id: "trade_100",
+            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+            type: "COPY",
+            traderName: "Moby-Sol Whale",
+            pair: "SOL/USDC",
+            direction: "BUY",
+            amount: 5.0,
+            entryPrice: 149.25,
+            exitPrice: null,
+            valueUsd: 746.25,
+            status: "OPEN",
+            pnlUsd: 3.75,
+            pnlPercent: 0.50,
+            chain: "Solana",
+            hash: "5tWzRkhsd329ds"
+          },
+          {
+            id: "trade_099",
+            timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hrs ago
+            type: "ALGO",
+            traderName: "Algorithmic Bot",
+            pair: "ETH/USDC",
+            direction: "BUY",
+            amount: 0.25,
+            entryPrice: 3192.40,
+            exitPrice: 3215.10,
+            valueUsd: 798.10,
+            status: "CLOSED",
+            pnlUsd: 5.67,
+            pnlPercent: 0.71,
+            chain: "Ethereum",
+            hash: "0xab45f29ad01e"
+          }
+        ],
+        integrations: {
+          binanceEnabled: false,
+          binanceKey: "",
+          binanceSecret: "",
+          coinbaseEnabled: false,
+          coinbaseKey: "",
+          coinbaseSecret: "",
+          solanaRpc: "https://api.mainnet-beta.solana.com",
+          ethereumRpc: "https://eth-mainnet.g.alchemy.com/v2/demo"
+        },
+        chartHistory: [112000, 113500, 115200, 118400, 121000, 123800, 124500],
+        market: [
+          { rank: 1, name: "Bitcoin", symbol: "BTC", price: 65420.00, change24h: 1.85, volume24h: 38240000000, marketCap: 1280000000000, history: [64000, 64200, 64100, 64500, 65000, 64800, 65420] },
+          { rank: 2, name: "Ethereum", symbol: "ETH", price: 3420.00, change24h: -0.45, volume24h: 19450000000, marketCap: 412000000000, history: [3450, 3440, 3460, 3430, 3410, 3400, 3420] },
+          { rank: 3, name: "Tether", symbol: "USDT", price: 1.00, change24h: 0.01, volume24h: 48900000000, marketCap: 112000000000, history: [1, 1, 1, 1, 1, 1, 1] },
+          { rank: 4, name: "BNB", symbol: "BNB", price: 582.40, change24h: 2.15, volume24h: 1240000000, marketCap: 85200000000, history: [570, 572, 575, 574, 579, 580, 582.4] },
+          { rank: 5, name: "Solana", symbol: "SOL", price: 150.00, change24h: 3.82, volume24h: 3420000000, marketCap: 69800000000, history: [144, 145, 147, 146, 149, 148, 150] },
+          { rank: 6, name: "USDC", symbol: "USDC", price: 1.00, change24h: -0.01, volume24h: 6800000000, marketCap: 34100000000, history: [1, 1, 1, 1, 1, 1, 1] },
+          { rank: 7, name: "Ripple", symbol: "XRP", price: 0.584, change24h: -1.25, volume24h: 980000000, marketCap: 32400000000, history: [0.59, 0.592, 0.589, 0.585, 0.582, 0.586, 0.584] },
+          { rank: 8, name: "Dogecoin", symbol: "DOGE", price: 0.124, change24h: 5.42, volume24h: 1850000000, marketCap: 18100000000, history: [0.117, 0.118, 0.119, 0.121, 0.12, 0.122, 0.124] },
+          { rank: 9, name: "Toncoin", symbol: "TON", price: 7.24, change24h: 0.95, volume24h: 310000000, marketCap: 17800000000, history: [7.15, 7.18, 7.22, 7.21, 7.23, 7.20, 7.24] },
+          { rank: 10, name: "Cardano", symbol: "ADA", price: 0.385, change24h: -0.80, volume24h: 280000000, marketCap: 13800000000, history: [0.388, 0.389, 0.387, 0.384, 0.382, 0.386, 0.385] },
+          { rank: 11, name: "Shiba Inu", symbol: "SHIB", price: 0.0000174, change24h: 4.12, volume24h: 420000000, marketCap: 10200000000, history: [0.0000167, 0.0000168, 0.0000170, 0.0000172, 0.0000171, 0.0000173, 0.0000174] },
+          { rank: 12, name: "Avalanche", symbol: "AVAX", price: 27.80, change24h: 3.12, volume24h: 380000000, marketCap: 10900000000, history: [26.8, 26.9, 27.2, 27.1, 27.4, 27.5, 27.8] },
+          { rank: 13, name: "Polkadot", symbol: "DOT", price: 6.22, change24h: -1.05, volume24h: 180000000, marketCap: 8900000000, history: [6.28, 6.29, 6.25, 6.21, 6.23, 6.20, 6.22] },
+          { rank: 14, name: "Chainlink", symbol: "LINK", price: 13.85, change24h: 1.45, volume24h: 290000000, marketCap: 8100000000, history: [13.6, 13.7, 13.65, 13.8, 13.75, 13.82, 13.85] },
+          { rank: 15, name: "Litecoin", symbol: "LTC", price: 71.40, change24h: 0.25, volume24h: 210000000, marketCap: 5300000000, history: [71.2, 71.3, 71.1, 71.5, 71.35, 71.42, 71.4] },
+          { rank: 16, name: "Near Protocol", symbol: "NEAR", price: 5.12, change24h: 6.82, volume24h: 460000000, marketCap: 5600000000, history: [4.75, 4.82, 4.9, 4.88, 5.02, 4.98, 5.12] },
+          { rank: 17, name: "Uniswap", symbol: "UNI", price: 7.82, change24h: -2.40, volume24h: 190000000, marketCap: 4700000000, history: [8.01, 8.05, 7.98, 7.9, 7.85, 7.88, 7.82] },
+          { rank: 18, name: "Internet Computer", symbol: "ICP", price: 7.92, change24h: 0.15, volume24h: 75000000, marketCap: 3700000000, history: [7.9, 7.92, 7.88, 7.95, 7.91, 7.93, 7.92] },
+          { rank: 19, name: "Aptos", symbol: "APT", price: 6.84, change24h: 1.22, volume24h: 140000000, marketCap: 3200000000, history: [6.74, 6.78, 6.81, 6.79, 6.83, 6.82, 6.84] },
+          { rank: 20, name: "Sui", symbol: "SUI", price: 0.842, change24h: 4.80, volume24h: 110000000, marketCap: 2100000000, history: [0.801, 0.812, 0.822, 0.815, 0.835, 0.829, 0.842] }
+        ]
+      };
+
+      // Load DB from localStorage or initialize
+      let db = JSON.parse(localStorage.getItem('NEXIS_DB'));
+      if (!db) {
+        db = DEFAULT_DB;
+        localStorage.setItem('NEXIS_DB', JSON.stringify(db));
+      }
+      
+      // If db version doesn't have market, initialize it
+      if (db && !db.market) {
+        db.market = DEFAULT_DB.market;
+        localStorage.setItem('NEXIS_DB', JSON.stringify(db));
+      }
+
+      // Memory Logs Console
+      let consoleLogs = [
+        { timestamp: new Date().toISOString(), message: "System initialized. Loaded database settings." },
+        { timestamp: new Date().toISOString(), message: "Listening to Solana RPC: " + db.integrations.solanaRpc },
+        { timestamp: new Date().toISOString(), message: "Listening to Ethereum RPC: " + db.integrations.ethereumRpc },
+        { timestamp: new Date().toISOString(), message: "Bots modules online. Standing by..." }
+      ];
+
+      function addLog(msg) {
+        consoleLogs.unshift({ timestamp: new Date().toISOString(), message: msg });
+        if (consoleLogs.length > 80) consoleLogs.pop();
+        renderTerminal();
+      }
+
+      // Live token price fluctuation simulator
+      let tokenPrices = {
+        "SOL": 150.00,
+        "ETH": 3200.00
+      };
+
+      // ------------------------------------------------------------------
+      // NAVIGATION CONTROLLER
+      // ------------------------------------------------------------------
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          
+          item.classList.add('active');
+          const viewId = item.getAttribute('data-view');
+          document.getElementById(`${viewId}-view`).classList.add('active');
+
+          if (viewId === 'dashboard') {
+            // Resize chart to prevent visual rendering glitches in hidden container
+            setTimeout(() => { chart.windowResizeHandler(); }, 100);
+          } else if (viewId === 'wallets') {
+            setTimeout(() => {
+              renderWalletsManager();
+              if (window.donutChart) {
+                window.donutChart.windowResizeHandler();
+              }
+            }, 100);
+          }
+        });
+      });
+
+      // Subtabs (Bots Config page)
+      document.querySelectorAll('[data-subtab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-subtab]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          const subtab = btn.getAttribute('data-subtab');
+          if (subtab === 'copy') {
+            document.getElementById('subtab-copy-content').style.display = 'flex';
+            document.getElementById('subtab-algo-content').style.display = 'none';
+          } else {
+            document.getElementById('subtab-copy-content').style.display = 'none';
+            document.getElementById('subtab-algo-content').style.display = 'flex';
+          }
+        });
+      });
+
+      // Show/Hide Integration API Input containers
+      const binanceCheck = document.getElementById('int-binance-enable');
+      const binanceInputs = document.getElementById('binance-inputs-container');
+      binanceCheck.addEventListener('change', () => {
+        binanceInputs.style.display = binanceCheck.checked ? 'flex' : 'none';
+      });
+
+      const coinbaseCheck = document.getElementById('int-coinbase-enable');
+      const coinbaseInputs = document.getElementById('coinbase-inputs-container');
+      coinbaseCheck.addEventListener('change', () => {
+        coinbaseInputs.style.display = coinbaseCheck.checked ? 'flex' : 'none';
+      });
+
+
+      // ------------------------------------------------------------------
+      // CHART GENERATOR
+      // ------------------------------------------------------------------
+      var options = {
+        series: [{
+          name: 'Portfolio Value',
+          data: db.chartHistory
+        }],
+        chart: {
+          height: 340,
+          type: 'area',
+          toolbar: { show: false },
+          background: 'transparent',
+          foreColor: '#94a3b8'
+        },
+        colors: ['#8b5cf6'],
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.45,
+            opacityTo: 0.05,
+            stops: [0, 100]
+          }
+        },
+        dataLabels: { enabled: false },
+        stroke: {
+          curve: 'smooth',
+          width: 3
+        },
+        grid: {
+          borderColor: 'rgba(255, 255, 255, 0.04)',
+          strokeDashArray: 4
+        },
+        xaxis: {
+          categories: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Live'],
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            formatter: function (value) {
+              return "$" + value.toLocaleString();
+            }
+          }
+        },
+        tooltip: {
+          theme: 'dark',
+          y: {
+            formatter: function (value) {
+              return "$" + value.toLocaleString();
+            }
+          }
+        }
+      };
+
+      var chart = new ApexCharts(document.querySelector("#chart"), options);
+      chart.render();
+
+      // Donut Chart for asset allocation
+      function getDonutData() {
+        const labels = db.portfolio.balances.map(b => b.symbol);
+        const series = db.portfolio.balances.map(b => b.valueUsd);
+        return { labels, series };
+      }
+
+      const donutData = getDonutData();
+      var donutOptions = {
+        series: donutData.series,
+        labels: donutData.labels,
+        chart: {
+          type: 'donut',
+          height: 250,
+          background: 'transparent',
+          foreColor: '#94a3b8'
+        },
+        colors: ['#8b5cf6', '#06b6d4', '#ec4899', '#10b981', '#f59e0b'],
+        stroke: { show: false },
+        dataLabels: { enabled: false },
+        legend: {
+          position: 'bottom',
+          fontFamily: 'var(--font-sans)',
+          fontWeight: 500,
+        },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '70%',
+              background: 'transparent',
+              labels: {
+                show: true,
+                name: {
+                  show: true,
+                  fontSize: '14px',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
+                  color: '#94a3b8',
+                },
+                value: {
+                  show: true,
+                  fontSize: '16px',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  color: '#fff',
+                  formatter: function (val) {
+                    return "$" + Number(val).toLocaleString(undefined, {maximumFractionDigits: 0});
+                  }
+                },
+                total: {
+                  show: true,
+                  label: 'Net Worth',
+                  color: '#94a3b8',
+                  formatter: function (w) {
+                    const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                    return "$" + total.toLocaleString(undefined, {maximumFractionDigits: 0});
+                  }
+                }
+              }
+            }
+          }
+        },
+        tooltip: {
+          theme: 'dark',
+          y: {
+            formatter: function (val) {
+              return "$" + val.toLocaleString(undefined, {maximumFractionDigits: 2});
+            }
+          }
+        }
+      };
+
+      window.donutChart = new ApexCharts(document.querySelector("#wallet-allocation-chart"), donutOptions);
+      window.donutChart.render();
+
+      function updateDonutChart() {
+        if (!window.donutChart) return;
+        const donutData = getDonutData();
+        window.donutChart.updateSeries(donutData.series);
+        window.donutChart.updateOptions({
+          labels: donutData.labels
+        });
+      }
+
+
+      // ------------------------------------------------------------------
+      // RENDER DOM HELPERS
+      // ------------------------------------------------------------------
+      
+      // Save state utility
+      function saveState() {
+        localStorage.setItem('NEXIS_DB', JSON.stringify(db));
+      }
+
+      function updateDashboardMetrics() {
+        // Portfolio Totals
+        document.getElementById('metric-total-value').innerText = `$${db.portfolio.totalValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        
+        // 24h PnL representation
+        const pnlSpan = document.getElementById('metric-pnl');
+        if (db.portfolio.pnl24hUsd >= 0) {
+          pnlSpan.innerHTML = `
+            <span class="text-success" style="font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
+              <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i> +$${db.portfolio.pnl24hUsd.toFixed(2)} (+${db.portfolio.pnl24hPercent}%)
+            </span>
+            <span style="color: hsl(var(--text-muted));">24h change</span>
+          `;
+        } else {
+          pnlSpan.innerHTML = `
+            <span class="text-danger" style="font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">
+              <i data-lucide="trending-down" style="width: 14px; height: 14px;"></i> -$${Math.abs(db.portfolio.pnl24hUsd).toFixed(2)} (${db.portfolio.pnl24hPercent}%)
+            </span>
+            <span style="color: hsl(var(--text-muted));">24h change</span>
+          `;
+        }
+        
+        // Copy Trader whales metric
+        const activeCount = db.traders.filter(t => t.status === 'active').length;
+        document.getElementById('metric-copy-count').innerText = `${activeCount} Active Whale${activeCount === 1 ? '' : 's'}`;
+
+        // Algo bot metrics
+        const isAlgoActive = db.algoSettings.status === 'active';
+        document.getElementById('metric-algo-status').innerText = isAlgoActive ? 'RUNNING' : 'STANDBY';
+        const algoBadge = document.getElementById('badge-algo-mode');
+        if (isAlgoActive) {
+          algoBadge.className = "badge badge-active";
+          algoBadge.innerHTML = `<span class="glow-dot glow-dot-pulse" style="background-color: cyan; box-shadow: 0 0 10px cyan;"></span> ${db.algoSettings.strategy.replace('_', ' ')}`;
+        } else {
+          algoBadge.className = "badge badge-paused";
+          algoBadge.innerText = "PAUSED";
+        }
+        
+        lucide.createIcons();
+      }
+
+      function renderBalances() {
+        const container = document.getElementById('balances-container');
+        container.innerHTML = '';
+
+        db.portfolio.balances.forEach(wallet => {
+          const div = document.createElement('div');
+          div.style.cssText = `
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+          `;
+          
+          div.innerHTML = `
+            <div>
+              <div style="font-weight: 600; font-size: 15px;">${wallet.name}</div>
+              <div style="font-size: 12px; color: hsl(var(--text-muted)); margin-top: 4px; font-family: var(--font-mono);">
+                ${wallet.address}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 700; font-size: 16px; font-family: var(--font-mono);">
+                ${wallet.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${wallet.symbol}
+              </div>
+              <div style="font-size: 13px; color: hsl(var(--text-secondary)); margin-top: 4px;">
+                $${wallet.valueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function renderWhales() {
+        const container = document.getElementById('whales-container');
+        container.innerHTML = '';
+
+        if (db.traders.length === 0) {
+          container.innerHTML = `<div style="text-align: center; color: hsl(var(--text-secondary)); padding: 20px;">No whales configured.</div>`;
+          return;
+        }
+
+        db.traders.forEach(trader => {
+          const div = document.createElement('div');
+          div.style.cssText = `
+            border: 1px solid var(--glass-border); 
+            border-radius: 16px; 
+            padding: 16px;
+            background: rgba(255,255,255,0.01);
+          `;
+
+          const isActive = trader.status === 'active';
+          
+          div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-weight: 600; font-size: 16px;">${trader.name}</span>
+                  <span class="badge ${isActive ? 'badge-active' : 'badge-paused'}">${trader.status.toUpperCase()}</span>
+                </div>
+                <div style="font-size: 12px; color: hsl(var(--text-muted)); margin-top: 4px; font-family: var(--font-mono);">
+                  ${trader.address} (${trader.chain})
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm toggle-trader-btn" data-id="${trader.id}">
+                  <i data-lucide="${isActive ? 'pause' : 'play'}" style="width: 14px;"></i>
+                </button>
+                <button class="btn btn-danger btn-sm delete-trader-btn" style="padding: 8px 10px;" data-id="${trader.id}">
+                  <i data-lucide="trash-2" style="width: 14px;"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 12px; fontSize: 13px;">
+              <div>
+                <div style="color: hsl(var(--text-secondary)); margin-bottom: 4px; font-size: 12px;">Copy Multiplier</div>
+                <input type="number" step="0.1" class="mult-input" data-id="${trader.id}" style="padding: 6px 10px; font-size: 13px; width: 80px;" value="${trader.multiplier}" />
+              </div>
+              <div>
+                <div style="color: hsl(var(--text-secondary)); margin-bottom: 4px; font-size: 12px;">Max Order size (USD)</div>
+                <input type="number" class="max-input" data-id="${trader.id}" style="padding: 6px 10px; font-size: 13px; width: 100px;" value="${trader.maxTradeUsd}" />
+              </div>
+              <div>
+                <div style="color: hsl(var(--text-secondary)); margin-bottom: 4px; font-size: 12px;">Est. Performance</div>
+                <div style="fontWeight: 600; color: hsl(var(--success)); font-family: var(--font-mono); margin-top: 6px; font-size: 13px;">
+                  ${trader.winRate}% WR / +$${trader.totalProfitUsd.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+
+        // Add action triggers
+        document.querySelectorAll('.toggle-trader-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            const trader = db.traders.find(t => t.id === id);
+            trader.status = trader.status === 'active' ? 'paused' : 'active';
+            addLog(`Copy Trading for [${trader.name}] ${trader.status === 'active' ? 'activated' : 'paused'}`);
+            saveState();
+            renderWhales();
+            updateDashboardMetrics();
+          });
+        });
+
+        document.querySelectorAll('.delete-trader-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            const index = db.traders.findIndex(t => t.id === id);
+            const traderName = db.traders[index].name;
+            db.traders.splice(index, 1);
+            addLog(`Trader wallet [${traderName}] removed.`);
+            saveState();
+            renderWhales();
+            updateDashboardMetrics();
+          });
+        });
+
+        document.querySelectorAll('.mult-input').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const id = inp.getAttribute('data-id');
+            const trader = db.traders.find(t => t.id === id);
+            trader.multiplier = Number(inp.value) || 1.0;
+            saveState();
+          });
+        });
+
+        document.querySelectorAll('.max-input').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const id = inp.getAttribute('data-id');
+            const trader = db.traders.find(t => t.id === id);
+            trader.maxTradeUsd = Number(inp.value) || 1000;
+            saveState();
+          });
+        });
+
+        lucide.createIcons();
+      }
+
+      function renderTerminal() {
+        const term = document.getElementById('terminal');
+        term.innerHTML = '';
+        consoleLogs.forEach(log => {
+          const div = document.createElement('div');
+          div.className = 'terminal-line';
+          
+          let color = '#e2e8f0';
+          if (log.message.includes('Executed')) color = 'hsl(var(--success))';
+          else if (log.message.includes('failed') || log.message.includes('skipped')) color = 'hsl(var(--danger))';
+          else if (log.message.includes('Alert')) color = 'hsl(var(--accent))';
+          else if (log.message.includes('Tick')) color = 'hsl(var(--secondary))';
+
+          div.innerHTML = `
+            <span class="terminal-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
+            <span class="terminal-msg" style="color: ${color}">${log.message}</span>
+          `;
+          term.appendChild(div);
+        });
+      }
+
+      function renderTrades() {
+        const tbody = document.getElementById('trades-tbody');
+        tbody.innerHTML = '';
+
+        if (db.trades.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: hsl(var(--text-secondary)); padding: 40px;">No trades recorded.</td></tr>`;
+          return;
+        }
+
+        db.trades.forEach(trade => {
+          const tr = document.createElement('tr');
+          const isBuy = trade.direction === "BUY";
+          const isOpen = trade.status === "OPEN";
+          const pnlClass = trade.pnlUsd >= 0 ? "text-success" : "text-danger";
+          const dateStr = new Date(trade.timestamp).toLocaleTimeString() + " " + new Date(trade.timestamp).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+
+          tr.innerHTML = `
+            <td style="font-size: 13px; color: hsl(var(--text-secondary))">${dateStr}</td>
+            <td>
+              <span class="badge" style="
+                background: ${trade.type === 'COPY' ? 'rgba(147, 51, 234, 0.1)' : 'rgba(6, 182, 212, 0.1)'};
+                color: ${trade.type === 'COPY' ? 'hsl(var(--primary))' : 'hsl(var(--secondary))'};
+                border: 1px solid ${trade.type === 'COPY' ? 'rgba(147, 51, 234, 0.2)' : 'rgba(6, 182, 212, 0.2)'}
+              ">${trade.type}</span>
+            </td>
+            <td style="font-weight: 600;">${trade.traderName}</td>
+            <td style="font-family: var(--font-mono);">${trade.pair}</td>
+            <td>
+              <span style="color: ${isBuy ? 'hsl(var(--success))' : 'hsl(var(--danger))'}; font-weight: 700;">${trade.direction}</span>
+            </td>
+            <td style="font-family: var(--font-mono);">${trade.amount.toFixed(4)}</td>
+            <td style="font-family: var(--font-mono);">$${trade.entryPrice.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+            <td style="font-family: var(--font-mono);">${trade.exitPrice ? '$'+trade.exitPrice.toLocaleString(undefined, {minimumFractionDigits:2}) : '-'}</td>
+            <td style="font-family: var(--font-mono);">$${trade.valueUsd.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+            <td>
+              <span class="${pnlClass}" style="font-weight: 600; font-family: var(--font-mono);">
+                ${trade.pnlUsd >= 0 ? '+' : ''}${trade.pnlUsd.toFixed(2)} (${trade.pnlPercent >= 0 ? '+' : ''}${trade.pnlPercent.toFixed(2)}%)
+              </span>
+            </td>
+            <td><span class="badge ${isOpen ? 'badge-active' : 'badge-paused'}">${isOpen ? 'OPEN' : 'CLOSED'}</span></td>
+            <td>
+              <div style="display: flex; gap: 8px;">
+                ${isOpen ? `
+                  <button class="btn btn-secondary btn-sm close-trade-btn" style="padding: 6px 10px; display: flex; align-items: center; gap: 4px; background: rgba(239, 68, 68, 0.08); borderColor: rgba(239, 68, 68, 0.2); color: hsl(var(--danger))" data-id="${trade.id}">
+                    <i data-lucide="x-circle" style="width: 13px;"></i> Exit
+                  </button>
+                ` : ''}
+                <a href="${trade.chain === 'Solana' ? 'https://solscan.io' : 'https://etherscan.io'}" target="_blank" style="display: inline-flex; align-items: center; padding: 6px; border-radius: 8px; border: 1px solid var(--glass-border); color: hsl(var(--text-secondary));">
+                  <i data-lucide="external-link" style="width: 13px;"></i>
+                </a>
+              </div>
+            </td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        // Close trade trigger
+        document.querySelectorAll('.close-trade-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            manualClosePosition(id);
+          });
+        });
+
+        lucide.createIcons();
+      }
+
+      function loadIntegrations() {
+        document.getElementById('int-solana-rpc').value = db.integrations.solanaRpc;
+        document.getElementById('int-ethereum-rpc').value = db.integrations.ethereumRpc;
+        
+        document.getElementById('int-binance-enable').checked = db.integrations.binanceEnabled;
+        document.getElementById('int-binance-key').value = db.integrations.binanceKey;
+        document.getElementById('int-binance-secret').value = db.integrations.binanceSecret;
+        document.getElementById('binance-inputs-container').style.display = db.integrations.binanceEnabled ? 'flex' : 'none';
+
+        document.getElementById('int-coinbase-enable').checked = db.integrations.coinbaseEnabled;
+        document.getElementById('int-coinbase-key').value = db.integrations.coinbaseKey;
+        document.getElementById('int-coinbase-secret').value = db.integrations.coinbaseSecret;
+        document.getElementById('coinbase-inputs-container').style.display = db.integrations.coinbaseEnabled ? 'flex' : 'none';
+      }
+
+      function loadAlgoSettings() {
+        document.getElementById('algo-bot-status-checkbox').checked = db.algoSettings.status === 'active';
+        document.getElementById('algo-strategy-select').value = db.algoSettings.strategy;
+        document.getElementById('algo-size-input').value = db.algoSettings.tradeSizeUsd;
+        document.getElementById('algo-rsi-oversold').value = db.algoSettings.rsiOversold;
+        document.getElementById('algo-rsi-overbought').value = db.algoSettings.rsiOverbought;
+        document.getElementById('algo-stoploss').value = db.algoSettings.stopLossPercent;
+        document.getElementById('algo-takeprofit').value = db.algoSettings.takeProfitPercent;
+        
+        document.getElementById('algo-toggle-label').innerText = db.algoSettings.status === 'active' ? 'Trading Enabled' : 'Trading Disabled';
+      }
+
+
+      // ------------------------------------------------------------------
+      // FORM SUBMISSIONS
+      // ------------------------------------------------------------------
+      
+      // 1. Add copy trader whale
+      document.getElementById('add-trader-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('trader-name-input').value;
+        const address = document.getElementById('trader-address-input').value;
+        const chain = document.getElementById('trader-chain-input').value;
+        const mult = Number(document.getElementById('trader-mult-input').value) || 1.0;
+        const max = Number(document.getElementById('trader-max-input').value) || 1000;
+
+        const newTrader = {
+          id: "trader_" + Math.floor(Math.random() * 100000),
+          name,
+          address,
+          chain,
+          status: "active",
+          multiplier: mult,
+          slippage: 1.0,
+          maxTradeUsd: max,
+          winRate: 0,
+          totalTrades: 0,
+          totalProfitUsd: 0
+        };
+
+        db.traders.push(newTrader);
+        addLog(`Connected tracking listener to address: [${name}]`);
+        saveState();
+        renderWhales();
+        updateDashboardMetrics();
+
+        // Reset
+        document.getElementById('trader-name-input').value = '';
+        document.getElementById('trader-address-input').value = '';
+        document.getElementById('trader-mult-input').value = '1.0';
+        document.getElementById('trader-max-input').value = '1000';
+      });
+
+      // 2. Save Algo strategy settings
+      document.getElementById('algo-settings-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        db.algoSettings.strategy = document.getElementById('algo-strategy-select').value;
+        db.algoSettings.tradeSizeUsd = Number(document.getElementById('algo-size-input').value) || 250;
+        db.algoSettings.rsiOversold = Number(document.getElementById('algo-rsi-oversold').value) || 30;
+        db.algoSettings.rsiOverbought = Number(document.getElementById('algo-rsi-overbought').value) || 70;
+        db.algoSettings.stopLossPercent = Number(document.getElementById('algo-stoploss').value) || 3.5;
+        db.algoSettings.takeProfitPercent = Number(document.getElementById('algo-takeprofit').value) || 10.0;
+
+        addLog(`Saved Algorithmic indicators configuration successfully.`);
+        saveState();
+        updateDashboardMetrics();
+      });
+
+      // Algo Bot Toggle Switch
+      const algoBotSwitch = document.getElementById('algo-bot-status-checkbox');
+      algoBotSwitch.addEventListener('change', () => {
+        const isChecked = algoBotSwitch.checked;
+        db.algoSettings.status = isChecked ? 'active' : 'paused';
+        document.getElementById('algo-toggle-label').innerText = isChecked ? 'Trading Enabled' : 'Trading Disabled';
+        addLog(`Algorithmic Trading Bot status set to: ${db.algoSettings.status.toUpperCase()}`);
+        saveState();
+        updateDashboardMetrics();
+      });
+
+      // 3. Save Integrations
+      document.getElementById('integrations-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        db.integrations.solanaRpc = document.getElementById('int-solana-rpc').value;
+        db.integrations.ethereumRpc = document.getElementById('int-ethereum-rpc').value;
+        
+        db.integrations.binanceEnabled = document.getElementById('int-binance-enable').checked;
+        db.integrations.binanceKey = document.getElementById('int-binance-key').value;
+        db.integrations.binanceSecret = document.getElementById('int-binance-secret').value;
+
+        db.integrations.coinbaseEnabled = document.getElementById('int-coinbase-enable').checked;
+        db.integrations.coinbaseKey = document.getElementById('int-coinbase-key').value;
+        db.integrations.coinbaseSecret = document.getElementById('int-coinbase-secret').value;
+
+        saveState();
+        
+        const successSpan = document.getElementById('save-key-success');
+        successSpan.style.display = 'inline-flex';
+        setTimeout(() => successSpan.style.display = 'none', 3000);
+        addLog("API credentials & node endpoints locked.");
+      });
+
+      // 4. Clear closed trades
+      document.getElementById('clear-trades-btn').addEventListener('click', () => {
+        db.trades = db.trades.filter(t => t.status === "OPEN");
+        saveState();
+        renderTrades();
+      });
+
+
+      // ------------------------------------------------------------------
+      // MANUAL TRADE EXIT
+      // ------------------------------------------------------------------
+      function manualClosePosition(tradeId) {
+        const trade = db.trades.find(t => t.id === tradeId);
+        if (!trade || trade.status !== "OPEN") return;
+
+        const isSol = trade.chain === "Solana";
+        const symbol = isSol ? "SOL" : "ETH";
+        const currentPrice = tokenPrices[symbol];
+        
+        const pnl = Number(((currentPrice - trade.entryPrice) * trade.amount).toFixed(2));
+        const finalValue = Number((trade.amount * currentPrice).toFixed(2));
+
+        trade.status = "CLOSED";
+        trade.exitPrice = currentPrice;
+        trade.pnlUsd = pnl;
+        trade.pnlPercent = Number((((currentPrice - trade.entryPrice) / trade.entryPrice) * 100).toFixed(2));
+
+        // Credit back USDC wallet
+        const usdcWallet = db.portfolio.balances.find(b => b.symbol === "USDC");
+        usdcWallet.balance = Number((usdcWallet.balance + finalValue).toFixed(2));
+        usdcWallet.valueUsd = usdcWallet.balance;
+
+        addLog(`Manual Exited Position: SOLD ${trade.amount} ${symbol} at $${currentPrice.toFixed(2)} (PnL: $${pnl > 0 ? '+' : ''}${pnl})`);
+        
+        saveState();
+        renderTrades();
+        renderBalances();
+        updateDashboardMetrics();
+      }
+
+
+      // ------------------------------------------------------------------
+      // SIMULATION LOOP (MIMICKING EXPRESS ENGINE)
+      // ------------------------------------------------------------------
+      let mockIndicatorRsi = 50;
+
+      // Price flutuations and total assets value re-calculator
+      setInterval(() => {
+        const solDelta = (Math.random() - 0.5) * 1.5;
+        const ethDelta = (Math.random() - 0.5) * 20.0;
+        
+        tokenPrices["SOL"] = Math.max(10, tokenPrices["SOL"] + solDelta);
+        tokenPrices["ETH"] = Math.max(100, tokenPrices["ETH"] + ethDelta);
+        
+        // Fluctuate Top 20 Market
+        db.market.forEach(coin => {
+          if (coin.symbol === "USDT" || coin.symbol === "USDC") return;
+          
+          let pct = (Math.random() - 0.5) * 0.8; // small ticks
+          
+          // Align SOL and ETH with main engine simulation
+          if (coin.symbol === "SOL") {
+            coin.price = tokenPrices["SOL"];
+            coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
+          } else if (coin.symbol === "ETH") {
+            coin.price = tokenPrices["ETH"];
+            coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
+          } else {
+            coin.price = Math.max(0.000001, coin.price * (1 + pct / 100));
+            coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
+          }
+          
+          // Shift history chart
+          coin.history.push(coin.price);
+          if (coin.history.length > 7) coin.history.shift();
+        });
+
+        // Fluctuate global market stats
+        const capDelta = (Math.random() - 0.5) * 0.02;
+        const capTotal = Number(document.getElementById('market-stat-cap')?.innerText.replace('$', '').replace('T', '')) || 2.48;
+        if (document.getElementById('market-stat-cap')) {
+          document.getElementById('market-stat-cap').innerText = `$${(capTotal + capDelta).toFixed(2)}T`;
+          
+          // Randomize fear & greed index slightly
+          const fgBar = document.getElementById('fear-greed-bar');
+          const fgLabel = document.getElementById('fear-greed-label');
+          if (fgBar && fgLabel) {
+            let fgIndex = parseInt(fgLabel.innerText) || 72;
+            fgIndex = Math.max(10, Math.min(95, fgIndex + (Math.random() > 0.5 ? 1 : -1)));
+            let fearGreedDesc = "Neutral";
+            if (fgIndex > 75) fearGreedDesc = "Extreme Greed";
+            else if (fgIndex > 55) fearGreedDesc = "Greed";
+            else if (fgIndex < 25) fearGreedDesc = "Extreme Fear";
+            else if (fgIndex < 45) fearGreedDesc = "Fear";
+            
+            fgLabel.innerText = `${fgIndex} (${fearGreedDesc})`;
+            fgBar.style.width = `${fgIndex}%`;
+          }
+        }
+
+        let totalAssetUsd = 0;
+        db.portfolio.balances.forEach(b => {
+          if (b.symbol === "SOL") {
+            b.valueUsd = Number((b.balance * tokenPrices["SOL"]).toFixed(2));
+          } else if (b.symbol === "ETH") {
+            b.valueUsd = Number((b.balance * tokenPrices["ETH"]).toFixed(2));
+          }
+          totalAssetUsd += b.valueUsd;
+        });
+
+        // Recalc open position values & PnL
+        let openPnL = 0;
+        db.trades.forEach(t => {
+          if (t.status === "OPEN") {
+            const currentPrice = t.pair.startsWith("SOL") ? tokenPrices["SOL"] : tokenPrices["ETH"];
+            t.pnlUsd = Number(((currentPrice - t.entryPrice) * t.amount).toFixed(2));
+            t.pnlPercent = Number((((currentPrice - t.entryPrice) / t.entryPrice) * 100).toFixed(2));
+            openPnL += t.pnlUsd;
+          }
+        });
+
+        db.portfolio.totalValueUsd = Number((totalAssetUsd + openPnL).toFixed(2));
+        db.portfolio.pnl24hUsd = Number((openPnL + solDelta * 10 + ethDelta * 0.5).toFixed(2));
+        db.portfolio.pnl24hPercent = Number(((db.portfolio.pnl24hUsd / db.portfolio.totalValueUsd) * 100).toFixed(2));
+
+        // Push live value to chart history occasionally
+        if (Math.random() > 0.85) {
+          db.chartHistory.push(db.portfolio.totalValueUsd);
+          if (db.chartHistory.length > 10) db.chartHistory.shift();
+          chart.updateSeries([{ data: db.chartHistory }]);
+        }
+
+        saveState();
+        updateDashboardMetrics();
+        renderBalances();
+        if (document.getElementById('trades-view').classList.contains('active')) {
+          renderTrades();
+        }
+        if (document.getElementById('market-view').classList.contains('active')) {
+          renderMarketTrends();
+        }
+        if (document.getElementById('wallets-view').classList.contains('active')) {
+          renderWalletsManager();
+        }
+        updateDonutChart();
+      }, 3000);
+
+      // Copy trading engine loop
+      setInterval(() => {
+        const activeWhales = db.traders.filter(t => t.status === 'active');
+        if (activeWhales.length === 0) return;
+
+        // 35% chance a tracked whale makes a move on chain
+        if (Math.random() < 0.35) {
+          const whale = activeWhales[Math.floor(Math.random() * activeWhales.length)];
+          const isSol = whale.chain === "Solana";
+          const symbol = isSol ? "SOL" : "ETH";
+          const currentPrice = tokenPrices[symbol];
+          const pair = `${symbol}/USDC`;
+          const isBuy = Math.random() > 0.45; // buy or take profit
+
+          const whaleQuantity = isSol ? Number((Math.random() * 40 + 10).toFixed(2)) : Number((Math.random() * 4 + 1).toFixed(2));
+          const whaleValueUsd = whaleQuantity * currentPrice;
+
+          addLog(`On-chain Alert: [${whale.name}] (${whale.address}) executed ${isBuy ? 'BUY' : 'SELL'} ${whaleQuantity} ${symbol} (~$${whaleValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}).`);
+
+          const amountToCopy = Number((whaleQuantity * whale.multiplier).toFixed(4));
+          const copyValueUsd = amountToCopy * currentPrice;
+
+          const usdcWallet = db.portfolio.balances.find(b => b.symbol === "USDC");
+          
+          if (isBuy) {
+            // Check limits
+            if (copyValueUsd > whale.maxTradeUsd) {
+              addLog(`Copy skipped: Swap value $${copyValueUsd.toFixed(2)} exceeds max trade limit of $${whale.maxTradeUsd} for ${whale.name}.`);
+              return;
+            }
+            if (usdcWallet.balance < copyValueUsd) {
+              addLog(`Copy failed: Insufficient USDC balance ($${usdcWallet.balance.toFixed(2)}) to mirror [${whale.name}].`);
+              return;
+            }
+
+            // Execute Buy
+            usdcWallet.balance = Number((usdcWallet.balance - copyValueUsd).toFixed(2));
+            usdcWallet.valueUsd = usdcWallet.balance;
+
+            const newTrade = {
+              id: "trade_" + Math.floor(Math.random() * 100000),
+              timestamp: new Date().toISOString(),
+              type: "COPY",
+              traderName: whale.name,
+              pair: pair,
+              direction: "BUY",
+              amount: amountToCopy,
+              entryPrice: currentPrice,
+              exitPrice: null,
+              valueUsd: copyValueUsd,
+              status: "OPEN",
+              pnlUsd: 0,
+              pnlPercent: 0,
+              chain: whale.chain,
+              hash: isSol ? `5tWzR${Math.random().toString(36).substring(7)}` : `0x${Math.random().toString(16).substring(2, 10)}`
+            };
+
+            db.trades.unshift(newTrade);
+            addLog(`Copy Executed: BUY ${amountToCopy} ${symbol} at $${currentPrice.toFixed(2)} (Value: $${copyValueUsd.toFixed(2)}) copying [${whale.name}]`);
+          } else {
+            // Sell: Close open position copied from this whale
+            const openPosition = db.trades.find(t => t.status === "OPEN" && t.traderName === whale.name && t.pair === pair);
+            if (!openPosition) {
+              addLog(`Copy skipped: Whale sold, but we hold no open position for [${whale.name}].`);
+              return;
+            }
+
+            const pnl = Number(((currentPrice - openPosition.entryPrice) * openPosition.amount).toFixed(2));
+            const finalValue = Number((openPosition.amount * currentPrice).toFixed(2));
+
+            openPosition.status = "CLOSED";
+            openPosition.exitPrice = currentPrice;
+            openPosition.pnlUsd = pnl;
+            openPosition.pnlPercent = Number((((currentPrice - openPosition.entryPrice) / openPosition.entryPrice) * 100).toFixed(2));
+
+            usdcWallet.balance = Number((usdcWallet.balance + finalValue).toFixed(2));
+            usdcWallet.valueUsd = usdcWallet.balance;
+
+            addLog(`Copy Executed: SELL/CLOSE ${openPosition.amount} ${symbol} at $${currentPrice.toFixed(2)} (PnL: $${pnl > 0 ? '+' : ''}${pnl} / ${openPosition.pnlPercent.toFixed(2)}%)`);
+          }
+
+          saveState();
+          renderBalances();
+          updateDashboardMetrics();
+          renderTrades();
+        }
+      }, 10000);
+
+      // Algorithmic Strategy indicator simulator
+      setInterval(() => {
+        if (db.algoSettings.status !== 'active') return;
+
+        // Flutuate RSI
+        mockIndicatorRsi = Math.max(10, Math.min(90, mockIndicatorRsi + (Math.random() - 0.5) * 8));
+        addLog(`Algorithmic Tick: Scanning indicators... RSI: ${mockIndicatorRsi.toFixed(1)}`);
+
+        const sizeUsd = db.algoSettings.tradeSizeUsd;
+        const usdcWallet = db.portfolio.balances.find(b => b.symbol === "USDC");
+
+        // Oversold -> Buy
+        if (mockIndicatorRsi < db.algoSettings.rsiOversold) {
+          const hasOpenAlgo = db.trades.some(t => t.status === "OPEN" && t.type === "ALGO");
+          if (hasOpenAlgo) {
+            addLog(`Algo Signal: RSI is oversold (${mockIndicatorRsi.toFixed(1)}), but we already have an active algorithmic position. Skipping.`);
+            return;
+          }
+          if (usdcWallet.balance < sizeUsd) {
+            addLog(`Algo Signal: RSI oversold (${mockIndicatorRsi.toFixed(1)}), but cash reserves are below allocated size $${sizeUsd}.`);
+            return;
+          }
+
+          const currentPrice = tokenPrices["SOL"];
+          const amount = sizeUsd / currentPrice;
+
+          usdcWallet.balance = Number((usdcWallet.balance - sizeUsd).toFixed(2));
+          usdcWallet.valueUsd = usdcWallet.balance;
+
+          const newTrade = {
+            id: "trade_" + Math.floor(Math.random() * 100000),
+            timestamp: new Date().toISOString(),
+            type: "ALGO",
+            traderName: "Algorithmic Bot",
+            pair: "SOL/USDC",
+            direction: "BUY",
+            amount: amount,
+            entryPrice: currentPrice,
+            exitPrice: null,
+            valueUsd: sizeUsd,
+            status: "OPEN",
+            pnlUsd: 0,
+            pnlPercent: 0,
+            chain: "Solana",
+            hash: `5tWzR_algo_${Math.random().toString(36).substring(7)}`
+          };
+
+          db.trades.unshift(newTrade);
+          addLog(`Algo Trade Triggered (RSI Oversold @ ${mockIndicatorRsi.toFixed(1)}): BUY ${amount.toFixed(4)} SOL at $${currentPrice.toFixed(2)}`);
+          mockIndicatorRsi += 12; // simulated rebound
+          
+          saveState();
+          renderBalances();
+          updateDashboardMetrics();
+          renderTrades();
+        }
+
+        // Overbought -> Sell
+        else if (mockIndicatorRsi > db.algoSettings.rsiOverbought) {
+          const openAlgo = db.trades.find(t => t.status === "OPEN" && t.type === "ALGO");
+          if (!openAlgo) return;
+
+          const currentPrice = tokenPrices["SOL"];
+          const pnl = Number(((currentPrice - openAlgo.entryPrice) * openAlgo.amount).toFixed(2));
+          const finalValue = Number((openAlgo.amount * currentPrice).toFixed(2));
+
+          openAlgo.status = "CLOSED";
+          openAlgo.exitPrice = currentPrice;
+          openAlgo.pnlUsd = pnl;
+          openAlgo.pnlPercent = Number((((currentPrice - openAlgo.entryPrice) / openAlgo.entryPrice) * 100).toFixed(2));
+
+          usdcWallet.balance = Number((usdcWallet.balance + finalValue).toFixed(2));
+          usdcWallet.valueUsd = usdcWallet.balance;
+
+          addLog(`Algo Trade Triggered (RSI Overbought @ ${mockIndicatorRsi.toFixed(1)}): SELL/CLOSE ${openAlgo.amount.toFixed(4)} SOL at $${currentPrice.toFixed(2)} (PnL: $${pnl > 0 ? '+' : ''}${pnl})`);
+          mockIndicatorRsi -= 12; // simulated drop
+
+          saveState();
+          renderBalances();
+          updateDashboardMetrics();
+          renderTrades();
+        }
+
+        // Check Stop Loss & Take Profits
+        else {
+          const openAlgo = db.trades.find(t => t.status === "OPEN" && t.type === "ALGO");
+          if (!openAlgo) return;
+
+          const currentPrice = tokenPrices["SOL"];
+          const pnlPercent = (((currentPrice - openAlgo.entryPrice) / openAlgo.entryPrice) * 100);
+
+          if (pnlPercent <= -db.algoSettings.stopLossPercent) {
+            closeAlgoWithReason(openAlgo, currentPrice, "STOP LOSS");
+          } else if (pnlPercent >= db.algoSettings.takeProfitPercent) {
+            closeAlgoWithReason(openAlgo, currentPrice, "TAKE PROFIT");
+          }
+        }
+      }, 10000);
+
+      function closeAlgoWithReason(openAlgo, currentPrice, reason) {
+        const usdcWallet = db.portfolio.balances.find(b => b.symbol === "USDC");
+        const pnl = Number(((currentPrice - openAlgo.entryPrice) * openAlgo.amount).toFixed(2));
+        const finalValue = Number((openAlgo.amount * currentPrice).toFixed(2));
+
+        openAlgo.status = "CLOSED";
+        openAlgo.exitPrice = currentPrice;
+        openAlgo.pnlUsd = pnl;
+        openAlgo.pnlPercent = Number((((currentPrice - openAlgo.entryPrice) / openAlgo.entryPrice) * 100).toFixed(2));
+
+        usdcWallet.balance = Number((usdcWallet.balance + finalValue).toFixed(2));
+        usdcWallet.valueUsd = usdcWallet.balance;
+
+        addLog(`Algo Trade Triggered (${reason}): SELL/CLOSE ${openAlgo.amount.toFixed(4)} SOL at $${currentPrice.toFixed(2)} (PnL: $${pnl > 0 ? '+' : ''}${pnl} / ${openAlgo.pnlPercent.toFixed(2)}%)`);
+
+        saveState();
+        renderBalances();
+        updateDashboardMetrics();
+        renderTrades();
+      }
+
+
+      // ------------------------------------------------------------------
+      // MARKET TRENDS RENDERER
+      // ------------------------------------------------------------------
+      function renderMarketTrends() {
+        const tbody = document.getElementById('market-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        db.market.forEach(coin => {
+          const tr = document.createElement('tr');
+          const isPos = coin.change24h >= 0;
+          const changeClass = isPos ? "text-success" : "text-danger";
+          const sparklineSvg = drawSparkline(coin.history, isPos);
+
+          tr.innerHTML = `
+            <td style="font-weight: 600; color: hsl(var(--text-secondary)); font-family: var(--font-mono);">${coin.rank}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700;">${coin.name}</span>
+                <span style="font-size: 11px; color: hsl(var(--text-muted)); font-weight: 600; font-family: var(--font-mono);">${coin.symbol}</span>
+              </div>
+            </td>
+            <td style="font-family: var(--font-mono); font-weight: 600;">$${coin.price.toLocaleString(undefined, { minimumFractionDigits: coin.price < 1 ? 4 : 2, maximumFractionDigits: coin.price < 1 ? 6 : 2 })}</td>
+            <td class="${changeClass}" style="font-weight: 600; font-family: var(--font-mono);">
+              ${isPos ? '+' : ''}${coin.change24h.toFixed(2)}%
+            </td>
+            <td style="font-family: var(--font-mono); color: hsl(var(--text-secondary));">$${(coin.volume24h / 1e9).toFixed(2)}B</td>
+            <td style="font-family: var(--font-mono); color: hsl(var(--text-secondary));">$${(coin.marketCap / 1e9).toFixed(2)}B</td>
+            <td>${sparklineSvg}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Update Top 24h Movers
+        const moversContainer = document.getElementById('market-movers-container');
+        if (moversContainer) {
+          moversContainer.innerHTML = '';
+          const sorted = [...db.market].sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
+          const topMovers = sorted.slice(0, 4);
+
+          topMovers.forEach(coin => {
+            const isPos = coin.change24h >= 0;
+            const changeClass = isPos ? "text-success" : "text-danger";
+            const div = document.createElement('div');
+            div.style.cssText = `
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 10px 14px;
+              background: rgba(255,255,255,0.02);
+              border: 1px solid var(--glass-border);
+              border-radius: 12px;
+            `;
+            div.innerHTML = `
+              <div>
+                <span style="font-weight: 600; font-size: 13px;">${coin.symbol}</span>
+                <span style="font-size: 11px; color: hsl(var(--text-muted)); font-family: var(--font-mono); margin-left: 6px;">$${coin.price.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+              </div>
+              <span class="${changeClass} font-mono" style="font-size: 13px; font-weight: 600;">
+                ${isPos ? '▲' : '▼'} ${Math.abs(coin.change24h).toFixed(2)}%
+              </span>
+            `;
+            moversContainer.appendChild(div);
+          });
+        }
+      }
+
+      // ------------------------------------------------------------------
+      // WALLET MANAGER RENDERER & ACTIONS
+      // ------------------------------------------------------------------
+      function renderWalletsManager() {
+        const listContainer = document.getElementById('wallets-detailed-list');
+        const selectContainer = document.getElementById('action-wallet-select');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = '';
+        selectContainer.innerHTML = '';
+
+        db.portfolio.balances.forEach(wallet => {
+          // 1. Render dropdown item
+          const opt = document.createElement('option');
+          opt.value = wallet.id;
+          opt.innerText = `${wallet.name} (${wallet.symbol})`;
+          selectContainer.appendChild(opt);
+
+          // 2. Render address card
+          const card = document.createElement('div');
+          card.style.cssText = `
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            background: rgba(255,255,255,0.01);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          `;
+
+          // Format address string
+          const fullAddr = wallet.address;
+          const displayAddr = fullAddr === "Internal" ? "Nexis Internal Ledger" : fullAddr;
+
+          card.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700; font-size: 16px;">${wallet.name}</span>
+                <span class="badge" style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); font-size: 10px;">${wallet.chain}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: hsl(var(--text-muted)); font-family: var(--font-mono);">
+                <span>${displayAddr}</span>
+                ${fullAddr !== "Internal" ? `
+                  <button class="btn btn-secondary btn-sm copy-addr-btn" style="padding: 2px 6px; border-radius: 4px;" data-addr="${fullAddr}">
+                    <i data-lucide="copy" style="width: 10px; height: 10px;"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+            <div style="text-align: right; display: flex; align-items: center; gap: 16px;">
+              <div>
+                <div style="font-weight: 700; font-size: 16px; font-family: var(--font-mono);">${wallet.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${wallet.symbol}</div>
+                <div style="font-size: 13px; color: hsl(var(--text-secondary)); margin-top: 2px;">$${wallet.valueUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              </div>
+              ${wallet.id !== "usdc" && wallet.id !== "sol" && wallet.id !== "eth" ? `
+                <button class="btn btn-danger btn-sm delete-wallet-btn" style="padding: 6px;" data-id="${wallet.id}">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
+              ` : ''}
+            </div>
+          `;
+          listContainer.appendChild(card);
+        });
+
+        // Add delete wallet action
+        document.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            const index = db.portfolio.balances.findIndex(w => w.id === id);
+            const wName = db.portfolio.balances[index].name;
+            db.portfolio.balances.splice(index, 1);
+            addLog(`Address [${wName}] removed from monitoring.`);
+            saveState();
+            renderWalletsManager();
+            renderBalances();
+            updateDashboardMetrics();
+            updateDonutChart();
+          });
+        });
+
+        // Add copy address action
+        document.querySelectorAll('.copy-addr-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const addr = btn.getAttribute('data-addr');
+            navigator.clipboard.writeText(addr).then(() => {
+              btn.innerHTML = `<i data-lucide="check" style="width: 10px; height: 10px; color: hsl(var(--success))"></i>`;
+              lucide.createIcons();
+              setTimeout(() => {
+                btn.innerHTML = `<i data-lucide="copy" style="width: 10px; height: 10px;"></i>`;
+                lucide.createIcons();
+              }, 2000);
+            }).catch(() => {
+              alert("Address copied: " + addr);
+            });
+          });
+        });
+
+        lucide.createIcons();
+      }
+
+      // 1. Custom Wallet form submit
+      document.getElementById('add-wallet-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const label = document.getElementById('wallet-label-input').value;
+        const address = document.getElementById('wallet-addr-input').value;
+        const chain = document.getElementById('wallet-chain-input').value;
+        const balance = Number(document.getElementById('wallet-bal-input').value) || 0.00;
+
+        const isSol = chain.includes("Solana");
+        const isEth = chain.includes("Ethereum");
+        const symbol = isSol ? "SOL" : (isEth ? "ETH" : "USDC");
+        const currentPrice = symbol === "USDC" ? 1.00 : tokenPrices[symbol];
+
+        const newWallet = {
+          id: "wallet_" + Math.floor(Math.random() * 100000),
+          name: label,
+          symbol: symbol,
+          balance: balance,
+          valueUsd: balance * currentPrice,
+          chain: chain,
+          address: address.substring(0, 6) + "..." + address.substring(address.length - 4)
+        };
+
+        db.portfolio.balances.push(newWallet);
+        addLog(`Monitored new public address: [${label}]`);
+        saveState();
+        renderWalletsManager();
+        renderBalances();
+        updateDashboardMetrics();
+        updateDonutChart();
+
+        // Reset
+        document.getElementById('wallet-label-input').value = '';
+        document.getElementById('wallet-addr-input').value = '';
+        document.getElementById('wallet-bal-input').value = '';
+      });
+
+      // 2. Fund / Transfer simulate submit
+      document.getElementById('wallet-action-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const wId = document.getElementById('action-wallet-select').value;
+        const type = document.getElementById('action-type-select').value;
+        const amount = Number(document.getElementById('action-amount-input').value) || 0;
+
+        const wallet = db.portfolio.balances.find(w => w.id === wId);
+        if (!wallet) return;
+
+        const symbol = wallet.symbol;
+        const currentPrice = symbol === "USDC" ? 1.00 : tokenPrices[symbol];
+
+        if (type === "deposit") {
+          wallet.balance = Number((wallet.balance + amount).toFixed(4));
+          wallet.valueUsd = Number((wallet.balance * currentPrice).toFixed(2));
+          addLog(`Funding Event: Deposited +${amount} ${symbol} to [${wallet.name}]`);
+        } else {
+          if (wallet.balance < amount) {
+            alert(`Insufficient funds in ${wallet.name}! (${wallet.balance} available vs ${amount} requested)`);
+            return;
+          }
+          wallet.balance = Number((wallet.balance - amount).toFixed(4));
+          wallet.valueUsd = Number((wallet.balance * currentPrice).toFixed(2));
+          addLog(`Funding Event: Transferred -${amount} ${symbol} from [${wallet.name}]`);
+        }
+
+        saveState();
+        renderWalletsManager();
+        renderBalances();
+        updateDashboardMetrics();
+        updateDonutChart();
+
+        document.getElementById('action-amount-input').value = '';
+      });
+
+      // ------------------------------------------------------------------
+      // AUTHENTICATION CONTROLLER (GOOGLE IDENTITY)
+      // ------------------------------------------------------------------
+      function checkAuth() {
+        const authScreen = document.getElementById('auth-screen');
+        const appContainer = document.getElementById('terminal-app-container');
+
+        if (db.user) {
+          authScreen.style.display = 'none';
+          appContainer.style.display = 'grid';
+          renderSidebarUser();
+          
+          // Trigger ApexCharts resizes now that containers are visible
+          setTimeout(() => {
+            if (window.chart) window.chart.windowResizeHandler();
+            if (window.donutChart) window.donutChart.windowResizeHandler();
+          }, 150);
+        } else {
+          authScreen.style.display = 'flex';
+          appContainer.style.display = 'none';
+          renderSidebarUser();
+        }
+      }
+
+      function renderSidebarUser() {
+        const footer = document.getElementById('sidebar-user-footer');
+        if (!footer) return;
+
+        if (db.user) {
+          footer.style.cssText = "display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--glass-border); padding-top: 16px; margin-top: auto;";
+          footer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; max-width: 140px;">
+              <img src="${db.user.avatar || 'https://lh3.googleusercontent.com/a/default-user'}" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border);" alt="Avatar" />
+              <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <span style="font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${db.user.name}</span>
+                <span style="font-size: 10px; color: hsl(var(--text-muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${db.user.email}</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="signout-btn" style="padding: 6px; border-radius: 8px; color: hsl(var(--text-secondary)); background: transparent; border-color: transparent;">
+              <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+            </button>
+          `;
+          
+          // Signout handler
+          document.getElementById('signout-btn').addEventListener('click', () => {
+            db.user = null;
+            saveState();
+            addLog("User signed out.");
+            checkAuth();
+          });
+        } else {
+          footer.style.cssText = "border-top: 1px solid var(--glass-border); padding-top: 16px; margin-top: auto;";
+          footer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: hsl(var(--text-muted))">
+              <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
+              <span>Locked Node</span>
+            </div>
+          `;
+        }
+        lucide.createIcons();
+      }
+
+      // Google Sign-In UI handlers
+      const googleLoginBtn = document.getElementById('google-login-btn');
+      const googleModal = document.getElementById('google-modal');
+      const closeGoogleModal = document.getElementById('close-google-modal');
+
+      googleLoginBtn.addEventListener('click', () => {
+        googleModal.style.display = 'flex';
+      });
+
+      closeGoogleModal.addEventListener('click', () => {
+        googleModal.style.display = 'none';
+      });
+
+      document.querySelectorAll('.google-acc-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const name = row.getAttribute('data-name');
+          const email = row.getAttribute('data-email');
+          const avatar = row.getAttribute('data-avatar');
+
+          db.user = { name, email, avatar };
+          saveState();
+
+          googleModal.style.display = 'none';
+          addLog(`User authenticated via Google Account: ${email}`);
+          
+          checkAuth();
+        });
+      });
+
+      // Drawing small SVG sparklines
+      function drawSparkline(history, isPositive) {
+        const strokeColor = isPositive ? 'hsl(var(--success))' : 'hsl(var(--danger))';
+        const min = Math.min(...history);
+        const max = Math.max(...history);
+        const range = max - min || 1;
+        const width = 80;
+        const height = 24;
+
+        // Map values to coordinates
+        const points = history.map((val, index) => {
+          const x = (index / (history.length - 1)) * width;
+          const y = height - ((val - min) / range) * (height - 4) - 2;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+
+        return `
+          <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="overflow: visible;">
+            <polyline fill="none" stroke="${strokeColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+          </svg>
+        `;
+      }
+
+      // ------------------------------------------------------------------
+      // INITIAL SYSTEM LOADER
+      // ------------------------------------------------------------------
+      updateDashboardMetrics();
+      renderBalances();
+      renderWhales();
+      renderTrades();
+      renderTerminal();
+      loadIntegrations();
+      loadAlgoSettings();
+      renderMarketTrends();
+      checkAuth();
+
+    </script>
+  </body>
+</html>

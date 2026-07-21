@@ -1,0 +1,135 @@
+{
+  "portfolio": {
+    "totalValueUsd": 124500.00,
+    "pnl24hUsd": 3450.00,
+    "pnl24hPercent": 2.85,
+    "balances": [
+      { "id": "sol", "name": "Solana Wallet", "symbol": "SOL", "balance": 184.50, "valueUsd": 27675.00, "chain": "Solana", "address": "HN7cAB...3zPQ99" },
+      { "id": "eth", "name": "Ethereum Wallet", "symbol": "ETH", "balance": 12.85, "valueUsd": 41120.00, "chain": "Ethereum", "address": "0x71C...8e9b" },
+      { "id": "usdc", "name": "USD Coin", "symbol": "USDC", "balance": 55705.00, "valueUsd": 55705.00, "chain": "Multi-Chain", "address": "Internal" }
+    ]
+  },
+  "traders": [
+    {
+      "id": "trader_01",
+      "name": "Moby-Sol Whale",
+      "address": "4hB6...K8sP",
+      "chain": "Solana",
+      "status": "active",
+      "multiplier": 1.5,
+      "slippage": 1.0,
+      "maxTradeUsd": 1000,
+      "winRate": 74.2,
+      "totalTrades": 142,
+      "totalProfitUsd": 124300
+    },
+    {
+      "id": "trader_02",
+      "name": "Giga-ETH Sniper",
+      "address": "0xae2...9051",
+      "chain": "Ethereum",
+      "status": "active",
+      "multiplier": 0.5,
+      "slippage": 0.5,
+      "maxTradeUsd": 2000,
+      "winRate": 68.9,
+      "totalTrades": 89,
+      "totalProfitUsd": 84100
+    },
+    {
+      "id": "trader_03",
+      "name": "Degen-Ray Arbitrage",
+      "address": "Fk8s...aU9q",
+      "chain": "Solana",
+      "status": "paused",
+      "multiplier": 1.0,
+      "slippage": 2.0,
+      "maxTradeUsd": 500,
+      "winRate": 81.5,
+      "totalTrades": 321,
+      "totalProfitUsd": 49200
+    }
+  ],
+  "algoSettings": {
+    "status": "paused",
+    "strategy": "RSI_Oversold",
+    "pairs": ["SOL/USDC", "ETH/USDC"],
+    "checkIntervalSeconds": 10,
+    "rsiOversold": 30,
+    "rsiOverbought": 70,
+    "macdFast": 12,
+    "macdSlow": 26,
+    "macdSignal": 9,
+    "tradeSizeUsd": 250,
+    "stopLossPercent": 3.5,
+    "takeProfitPercent": 10.0
+  },
+  "trades": [
+    {
+      "id": "trade_100",
+      "timestamp": "2026-07-21T08:15:30Z",
+      "type": "COPY",
+      "traderName": "Moby-Sol Whale",
+      "pair": "SOL/USDC",
+      "direction": "BUY",
+      "amount": 5.0,
+      "entryPrice": 149.25,
+      "exitPrice": null,
+      "valueUsd": 746.25,
+      "status": "OPEN",
+      "pnlUsd": 3.75,
+      "pnlPercent": 0.50,
+      "chain": "Solana",
+      "hash": "5tWzR...uXq"
+    },
+    {
+      "id": "trade_099",
+      "timestamp": "2026-07-21T07:42:10Z",
+      "type": "ALGO",
+      "traderName": "SMA Crossover Bot",
+      "pair": "ETH/USDC",
+      "direction": "BUY",
+      "amount": 0.25,
+      "entryPrice": 3192.40,
+      "exitPrice": 3215.10,
+      "valueUsd": 798.10,
+      "status": "CLOSED",
+      "pnlUsd": 5.67,
+      "pnlPercent": 0.71,
+      "chain": "Ethereum",
+      "hash": "0xab45...ef2"
+    },
+    {
+      "id": "trade_098",
+      "timestamp": "2026-07-21T05:22:15Z",
+      "type": "COPY",
+      "traderName": "Giga-ETH Sniper",
+      "pair": "ETH/USDC",
+      "direction": "BUY",
+      "amount": 0.35,
+      "entryPrice": 3185.00,
+      "exitPrice": 3210.00,
+      "valueUsd": 1114.75,
+      "status": "CLOSED",
+      "pnlUsd": 8.75,
+      "pnlPercent": 0.78,
+      "chain": "Ethereum",
+      "hash": "0xcd78...f9a"
+    }
+  ],
+  "integrations": {
+    "binance": { "enabled": false, "apiKey": "", "apiSecret": "" },
+    "coinbase": { "enabled": false, "apiKey": "", "apiSecret": "" },
+    "solanaRpc": { "enabled": true, "url": "https://api.mainnet-beta.solana.com" },
+    "ethereumRpc": { "enabled": true, "url": "https://eth-mainnet.g.alchemy.com/v2/demo" }
+  },
+  "performanceHistory": [
+    { "date": "2026-07-15", "value": 112000 },
+    { "date": "2026-07-16", "value": 113500 },
+    { "date": "2026-07-17", "value": 115200 },
+    { "date": "2026-07-18", "value": 118400 },
+    { "date": "2026-07-19", "value": 121000 },
+    { "date": "2026-07-20", "value": 123800 },
+    { "date": "2026-07-21", "value": 124500 }
+  ]
+}
