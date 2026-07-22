@@ -976,6 +976,7 @@
                   <div class="form-group">
                     <label>Chain / Network</label>
                     <select id="wallet-chain-input">
+                      <option value="Bitcoin">Bitcoin (BTC)</option>
                       <option value="Solana">Solana (SOL)</option>
                       <option value="Ethereum">Ethereum (ETH)</option>
                       <option value="Multi-Chain">Stablecoins (USDC)</option>
@@ -1299,7 +1300,8 @@
       // Live token price fluctuation simulator
       let tokenPrices = {
         "SOL": 150.00,
-        "ETH": 3200.00
+        "ETH": 3200.00,
+        "BTC": 65000.00
       };
 
       // ------------------------------------------------------------------
@@ -1954,9 +1956,11 @@
       setInterval(() => {
         const solDelta = (Math.random() - 0.5) * 1.5;
         const ethDelta = (Math.random() - 0.5) * 20.0;
+        const btcDelta = (Math.random() - 0.5) * 300.0;
         
         tokenPrices["SOL"] = Math.max(10, tokenPrices["SOL"] + solDelta);
         tokenPrices["ETH"] = Math.max(100, tokenPrices["ETH"] + ethDelta);
+        tokenPrices["BTC"] = Math.max(1000, tokenPrices["BTC"] + btcDelta);
         
         // Fluctuate Top 20 Market
         db.market.forEach(coin => {
@@ -1964,12 +1968,15 @@
           
           let pct = (Math.random() - 0.5) * 0.8; // small ticks
           
-          // Align SOL and ETH with main engine simulation
+          // Align SOL, ETH, and BTC with main engine simulation
           if (coin.symbol === "SOL") {
             coin.price = tokenPrices["SOL"];
             coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
           } else if (coin.symbol === "ETH") {
             coin.price = tokenPrices["ETH"];
+            coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
+          } else if (coin.symbol === "BTC") {
+            coin.price = tokenPrices["BTC"];
             coin.change24h = Math.max(-50, Math.min(100, coin.change24h + pct));
           } else {
             coin.price = Math.max(0.000001, coin.price * (1 + pct / 100));
@@ -2010,6 +2017,8 @@
             b.valueUsd = Number((b.balance * tokenPrices["SOL"]).toFixed(2));
           } else if (b.symbol === "ETH") {
             b.valueUsd = Number((b.balance * tokenPrices["ETH"]).toFixed(2));
+          } else if (b.symbol === "BTC") {
+            b.valueUsd = Number((b.balance * tokenPrices["BTC"]).toFixed(2));
           }
           totalAssetUsd += b.valueUsd;
         });
@@ -2437,7 +2446,8 @@
 
         const isSol = chain.includes("Solana");
         const isEth = chain.includes("Ethereum");
-        const symbol = isSol ? "SOL" : (isEth ? "ETH" : "USDC");
+        const isBtc = chain.includes("Bitcoin");
+        const symbol = isSol ? "SOL" : (isEth ? "ETH" : (isBtc ? "BTC" : "USDC"));
         const currentPrice = symbol === "USDC" ? 1.00 : tokenPrices[symbol];
 
         const newWallet = {
